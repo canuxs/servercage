@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Servercage - Service View</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+</head>
+<body style="background-color: #0d1117; color: white; font-family: sans-serif;">
+
+    <div id="content-area">
+        <!-- Site içeriği buraya gelecek -->
+        <h1>Loading Service...</h1>
+    </div>
+
+    <script>
+        // Firebase Ayarların
+        const firebaseConfig = {
+            databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // URL'den hangi servise bakıldığını anla (Örn: service.html?id=user123)
+        const params = new URLSearchParams(window.location.search);
+        const serviceId = params.get('id');
+
+        if (serviceId) {
+            const serviceRef = db.ref('services/' + serviceId);
+
+            // 1. ETKİLEŞİM SAYACINI ARTTIR (Her girişte +1)
+            serviceRef.child('user_engagement').transaction((current) => {
+                return (current || 0) + 1;
+            });
+
+            // 2. DURUM KONTROLÜ
+            serviceRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                const container = document.getElementById('content-area');
+
+                if (!data) {
+                    container.innerHTML = "<h1>404: Service Not Found</h1>";
+                    return;
+                }
+
+                if (data.status === "offline") {
+                    container.innerHTML = "<h1>Service Suspended</h1><p>Reason: Low engagement (<20). Manual restart required.</p>";
+                } 
+                else if (data.status === "relaunching") {
+                    container.innerHTML = "<h1>Booting Up...</h1><p>This service is in the 24-hour manual activation period.</p>";
+                } 
+                else {
+                    container.innerHTML = `<h1>Welcome to ${data.name}</h1><p>Engagement: ${data.user_engagement}</p>`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
