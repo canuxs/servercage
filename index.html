@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Servercage | Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
+</head>
+<body>
+    <nav>
+        <h1>Servercage</h1>
+        <button id="loginBtn">Login with Google</button>
+    </nav>
+
+    <main id="app" style="display:none;">
+        <section id="create-service">
+            <h2>Create New Service</h2>
+            <input type="text" id="repoName" placeholder="Service Name">
+            <button onclick="createService()">Deploy Service</button>
+        </section>
+
+        <section id="manage-service">
+            <h2>Your Service Status</h2>
+            <div id="statusDisplay"></div>
+            <button id="relaunchBtn" style="display:none;" onclick="startRelaunch()">Relaunch (Takes 24h)</button>
+        </section>
+
+        <section id="file-upload">
+            <h2>Quick File Link</h2>
+            <input type="file" id="fileInput">
+            <button onclick="uploadFile()">Generate Link</button>
+        </section>
+    </main>
+</body>
+</html>
