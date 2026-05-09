@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Servercage | Dashboard</title>
-    <!-- Firebase App & Database (V9 Compat) -->
+    <!-- Firebase SDK'ları (Sıralama Önemli) -->
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
 </head>
-<body style="background: #0d1117; color: white; font-family: Arial;">
+<body style="background: #0d1117; color: white; font-family: Arial; padding: 20px;">
+
     <div id="auth-section">
-        <button onclick="login()">Login with Google</button>
+        <button id="loginBtn" style="padding: 10px 20px; cursor: pointer;">Login with Google</button>
     </div>
 
     <div id="main-panel" style="display:none;">
@@ -19,24 +20,38 @@
         <div id="create-area">
             <h3>Create Service</h3>
             <input type="text" id="sName" placeholder="Service Name...">
-            <button onclick="createService()">Create (Limit: 1)</button>
+            <button onclick="createService()">Create Service</button>
         </div>
-        <div id="my-service"></div>
+        <div id="my-service" style="margin-top: 20px;"></div>
     </div>
 
     <script>
+        // BURAYI KENDİ PROJE AYARLARINLA DOLDURMALISIN
         const firebaseConfig = {
-            databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/"
+            apiKey: "SENIN_API_KEYIN_BURAYA", 
+            authDomain: "servercage.firebaseapp.com",
+            databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "servercage",
+            storageBucket: "servercage.appspot.com",
+            messagingSenderId: "SAYILAR",
+            appId: "APP_ID"
         };
+
+        // Firebase'i başlat
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
 
-        function login() {
+        // Login Butonunu Dinle
+        document.getElementById('loginBtn').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider);
-        }
+            auth.signInWithPopup(provider).catch(error => {
+                console.error("Giriş hatası:", error.message);
+                alert("Auth Error: " + error.message);
+            });
+        });
 
+        // Kullanıcı durumunu kontrol et
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-section').style.display = 'none';
@@ -54,9 +69,12 @@
                     const sId = Object.keys(data)[0];
                     const sData = data[sId];
                     document.getElementById('my-service').innerHTML = `
-                        <h4>Your Service: ${sData.name}</h4>
-                        <p>Status: ${sData.status}</p>
-                        <a href="service.html?id=${sId}" style="color:cyan">View Service Page</a>
+                        <div style="border: 1px solid #30363d; padding: 15px; border-radius: 6px;">
+                            <h4>Service: ${sData.name}</h4>
+                            <p>Status: <b>${sData.status}</b></p>
+                            <p>Engagement: ${sData.user_engagement || 0} / 20</p>
+                            <a href="service.html?id=${sId}" style="color:#58a6ff">Go to Service Page</a>
+                        </div>
                     `;
                 }
             });
@@ -64,16 +82,15 @@
 
         function createService() {
             const name = document.getElementById('sName').value;
-            const uid = auth.currentUser.uid;
-            if(!name) return;
+            if(!name || !auth.currentUser) return;
 
             const newRef = db.ref('services').push();
             newRef.set({
                 name: name,
-                owner: uid,
+                owner: auth.currentUser.uid,
                 status: "active",
                 user_engagement: 0,
-                createdAt: Date.now()
+                createdAt: firebase.database.ServerValue.TIMESTAMP
             });
         }
     </script>
