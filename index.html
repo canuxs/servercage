@@ -1,34 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Servercage | Dashboard</title>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
+    <!-- Firebase App & Database (V9 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
 </head>
-<body>
-    <nav>
-        <h1>Servercage</h1>
-        <button id="loginBtn">Login with Google</button>
-    </nav>
+<body style="background: #0d1117; color: white; font-family: Arial;">
+    <div id="auth-section">
+        <button onclick="login()">Login with Google</button>
+    </div>
 
-    <main id="app" style="display:none;">
-        <section id="create-service">
-            <h2>Create New Service</h2>
-            <input type="text" id="repoName" placeholder="Service Name">
-            <button onclick="createService()">Deploy Service</button>
-        </section>
+    <div id="main-panel" style="display:none;">
+        <h2>Welcome, <span id="user-name"></span></h2>
+        <hr>
+        <div id="create-area">
+            <h3>Create Service</h3>
+            <input type="text" id="sName" placeholder="Service Name...">
+            <button onclick="createService()">Create (Limit: 1)</button>
+        </div>
+        <div id="my-service"></div>
+    </div>
 
-        <section id="manage-service">
-            <h2>Your Service Status</h2>
-            <div id="statusDisplay"></div>
-            <button id="relaunchBtn" style="display:none;" onclick="startRelaunch()">Relaunch (Takes 24h)</button>
-        </section>
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
 
-        <section id="file-upload">
-            <h2>Quick File Link</h2>
-            <input type="file" id="fileInput">
-            <button onclick="uploadFile()">Generate Link</button>
-        </section>
-    </main>
+        function login() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('main-panel').style.display = 'block';
+                document.getElementById('user-name').innerText = user.displayName;
+                checkUserLink(user.uid);
+            }
+        });
+
+        function checkUserLink(uid) {
+            db.ref('services').orderByChild('owner').equalTo(uid).on('value', snap => {
+                const data = snap.val();
+                if (data) {
+                    document.getElementById('create-area').style.display = 'none';
+                    const sId = Object.keys(data)[0];
+                    const sData = data[sId];
+                    document.getElementById('my-service').innerHTML = `
+                        <h4>Your Service: ${sData.name}</h4>
+                        <p>Status: ${sData.status}</p>
+                        <a href="service.html?id=${sId}" style="color:cyan">View Service Page</a>
+                    `;
+                }
+            });
+        }
+
+        function createService() {
+            const name = document.getElementById('sName').value;
+            const uid = auth.currentUser.uid;
+            if(!name) return;
+
+            const newRef = db.ref('services').push();
+            newRef.set({
+                name: name,
+                owner: uid,
+                status: "active",
+                user_engagement: 0,
+                createdAt: Date.now()
+            });
+        }
+    </script>
 </body>
 </html>
