@@ -2,37 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Servercage View</title>
+    <title>Service View</title>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
 </head>
-<body style="background: #0d1117; color: white; text-align: center; padding-top: 50px;">
-    <div id="display">Loading...</div>
+<body style="background: #0d1117; color: white; text-align: center; font-family: Arial; padding-top: 100px;">
+    
+    <div id="display">
+        <h2 id="loading">Loading Service...</h2>
+    </div>
 
     <script>
-        firebase.initializeApp({ databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/" });
+        // Aynı Config buraya da lazım
+        const firebaseConfig = {
+            apiKey: "SENIN_API_KEYIN_BURAYA",
+            databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const sId = new URLSearchParams(window.location.search).get('id');
 
         if (sId) {
             const sRef = db.ref('services/' + sId);
 
-            // Ziyaretçiyi kaydet (+1 Puan)
+            // Sayaca +1 ekle
             sRef.child('user_engagement').transaction(c => (c || 0) + 1);
 
-            // Durumu kontrol et
             sRef.on('value', snap => {
                 const data = snap.val();
                 const box = document.getElementById('display');
                 
+                if (!data) {
+                    box.innerHTML = "<h1>404</h1><p>Service not found.</p>";
+                    return;
+                }
+
                 if (data.status === "offline") {
-                    box.innerHTML = "<h1>⚠️ Site Suspended</h1><p>Engagement was below 20.</p>";
+                    box.innerHTML = "<h1>⚠️ Site Suspended</h1><p>Engagement < 20. Manual start required.</p>";
                 } else if (data.status === "relaunching") {
-                    box.innerHTML = "<h1>⏳ Relaunching...</h1><p>Please wait 24 hours.</p>";
+                    box.innerHTML = "<h1>⏳ Relaunching...</h1><p>The site is being activated. Please wait 24 hours.</p>";
                 } else {
-                    box.innerHTML = `<h1>${data.name}</h1><p>Views: ${data.user_engagement}</p>`;
+                    box.innerHTML = `<h1>${data.name}</h1><p>Active Engagement: ${data.user_engagement}</p>`;
                 }
             });
+        } else {
+            document.getElementById('display').innerHTML = "<h1>404</h1><p>No service ID provided.</p>";
         }
     </script>
 </body>
