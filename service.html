@@ -2,23 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Service View</title>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
 </head>
-<body style="background: #0d1117; color: white; text-align: center; font-family: Arial; padding-top: 100px;">
-    
-    <div id="display">
-        <h2 id="loading">Loading Service...</h2>
-    </div>
+<body>
+    <div id="render-point">Loading...</div>
 
     <script>
-        // Aynı Config buraya da lazım
         const firebaseConfig = {
-            apiKey: "SENIN_API_KEYIN_BURAYA",
             databaseURL: "https://servercage-default-rtdb.europe-west1.firebasedatabase.app/"
         };
-        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const sId = new URLSearchParams(window.location.search).get('id');
@@ -26,28 +19,22 @@
         if (sId) {
             const sRef = db.ref('services/' + sId);
 
-            // Sayaca +1 ekle
+            // Engagement logic
             sRef.child('user_engagement').transaction(c => (c || 0) + 1);
 
             sRef.on('value', snap => {
                 const data = snap.val();
-                const box = document.getElementById('display');
-                
-                if (!data) {
-                    box.innerHTML = "<h1>404</h1><p>Service not found.</p>";
-                    return;
-                }
+                if (!data) return document.body.innerHTML = "404 Not Found";
 
-                if (data.status === "offline") {
-                    box.innerHTML = "<h1>⚠️ Site Suspended</h1><p>Engagement < 20. Manual start required.</p>";
-                } else if (data.status === "relaunching") {
-                    box.innerHTML = "<h1>⏳ Relaunching...</h1><p>The site is being activated. Please wait 24 hours.</p>";
+                if (data.status === "active") {
+                    // Veritabanındaki kodu direkt sayfaya basıyoruz
+                    document.open();
+                    document.write(data.content || "No content yet.");
+                    document.close();
                 } else {
-                    box.innerHTML = `<h1>${data.name}</h1><p>Active Engagement: ${data.user_engagement}</p>`;
+                    document.body.innerHTML = "<h1>Site is Offline</h1>";
                 }
             });
-        } else {
-            document.getElementById('display').innerHTML = "<h1>404</h1><p>No service ID provided.</p>";
         }
     </script>
 </body>
